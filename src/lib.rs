@@ -1,6 +1,10 @@
 use std::env;
 use std::fs;
+use std::io;
 use std::error::Error;
+
+pub mod args;
+use args::Args;
 
 pub struct Config {
     pub query: String,
@@ -34,13 +38,17 @@ impl Config {
     }
 }
 
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(config.file_path)?;
-
-    let results = if config.ignore_case {
-        search_case_insensitive(&config.query, &contents)
+pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
+    let contents = if args.path == "-" {
+        io::read_to_string(io::stdin())?
     } else {
-        search(&config.query, &contents)
+        fs::read_to_string(&args.path)?
+    };
+
+    let results = if args.ignore_case {
+        search_case_insensitive(&args.query, &contents)
+    } else {
+        search(&args.query, &contents)
     };
 
     for line in results {

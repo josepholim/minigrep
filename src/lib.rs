@@ -1,42 +1,11 @@
-use std::env;
 use std::fs;
 use std::io;
 use std::error::Error;
 
+use regex::Regex;
+
 pub mod args;
 use args::Args;
-
-pub struct Config {
-    pub query: String,
-    pub file_path: String,
-    pub ignore_case: bool,
-}
-
-impl Config {
-    pub fn build(
-        mut args: impl Iterator<Item = String>
-    ) -> Result<Config, &'static str> {
-        args.next();
-
-        let query = match args.next() {
-            Some(arg) => arg,
-            None => return Err("Didn't get a query string"),
-        };
-
-        let file_path = match args.next() {
-            Some(arg) => arg,
-            None => return Err("Didn't get a file path"),
-        };
-
-        let ignore_case = env::var("IGNORE_CASE").is_ok();
-
-        Ok(Config {
-            query,
-            file_path,
-            ignore_case,
-        }) 
-    }
-}
 
 pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
     let contents = if args.path == "-" {
@@ -45,7 +14,10 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
         fs::read_to_string(&args.path)?
     };
 
-    let results = if args.ignore_case {
+    let results = if args.regex {
+        let pattern = Regex::new(&args.query)?;
+        search_regex(&pattern, &contents)
+    } else if args.ignore_case {
         search_case_insensitive(&args.query, &contents)
     } else {
         search(&args.query, &contents)
@@ -65,15 +37,19 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
         .collect()
 }
 
-pub fn search_case_insensitive<'a>(
-    query: &str,
-    contents: &'a str
-) -> Vec<&'a str> {
+pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     let query = query.to_lowercase();
     
     contents
         .lines()
         .filter(|line| line.to_lowercase().contains(&query))
+        .collect()
+}
+
+pub fn search_regex<'a>(pattern: &Regex, contents: &'a str) -> Vec<&'a str> {
+    contents
+        .lines()
+        .filter(|line| pattern.is_match(line))
         .collect()
 }
 
@@ -105,6 +81,34 @@ Trust me.";
         assert_eq!(
             vec!["Rust:", "Trust me."],
             search_case_insensitive(query, contents)
+        );
+    }
+
+    #[test]
+    fn regex_basic() {
+        let query = r"duct";
+        let pattern = Regex::new(query).unwrap();
+        let text = "\
+Rust:
+safe, productive, and fast-paced.
+Pick three.";
+        assert_eq!(
+            vec!["safe, productive, and fast-paced."],
+            search_regex(&pattern, text)
+        );
+    }
+
+    #[test]
+    fn regex_word_boundary() {
+        let query = r"\bfoo\b";
+        let pattern = Regex::new(query).unwrap();
+        let text = "\
+foobar
+ foo bar
+foo";
+        assert_eq!(
+            vec![" foo bar", "foo"],
+            search_regex(&pattern, text)
         );
     }
 }

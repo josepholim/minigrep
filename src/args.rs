@@ -29,6 +29,10 @@ pub struct Args {
     #[arg(short = 'c', long, action = ArgAction::SetTrue)]
     pub count: bool,
 
+    /// Invert match: show lines that *do not* match
+    #[arg(short = 'v', long, action = ArgAction::SetTrue)]
+    pub invert: bool,
+
     /// Number of context lines to show before and after each match
     #[arg(short = 'C', long, default_value_t = 0, value_name = "NUM")]
     pub context: usize,

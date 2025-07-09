@@ -7,6 +7,9 @@ use regex::Regex;
 pub mod args;
 use args::Args;
 
+pub mod output;
+use output::print_matches;
+
 pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
     let contents = if args.path == "-" {
         io::read_to_string(io::stdin())?
@@ -14,18 +17,24 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
         fs::read_to_string(&args.path)?
     };
 
-    let results = if args.regex {
-        let pattern = Regex::new(&args.query)?;
-        search_regex(&pattern, &contents)
-    } else if args.ignore_case {
-        search_case_insensitive(&args.query, &contents)
-    } else {
-        search(&args.query, &contents)
+    let matcher = |line: &str| {
+        let hit = if args.regex {
+            Regex::new(&args.query).unwrap().is_match(line)
+        } else if args.ignore_case {
+            line.to_lowercase().contains(&args.query.to_lowercase())
+        } else {
+            line.contains(&args.query)
+        };
+        if args.invert { !hit } else { hit }
     };
 
-    for line in results {
-        println!("{line}");
-    }
+    let matches: Vec<(usize, &str)> = contents
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| matcher(line))
+        .collect();
+
+    print_matches(&matches, args);
 
     Ok(())
 }

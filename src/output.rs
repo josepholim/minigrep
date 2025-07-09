@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::args::Args;
 
 pub fn print_matches(matches: &[(usize, &str)], args: &Args) {
@@ -11,5 +12,41 @@ pub fn print_matches(matches: &[(usize, &str)], args: &Args) {
             print!("{:>6}  ", idx + 1);
         }
         println!("{}", line);
+    }
+}
+
+pub fn print_matches_with_context(
+    lines: &[&str], 
+    match_idxs: &[usize], 
+    context_set: &HashSet<usize>,
+    args: &Args
+) {
+    let mut prev: Option<usize> = None;
+    let match_set: HashSet<usize> = match_idxs.iter().copied().collect();
+
+    for (i, &line) in lines.iter().enumerate() {
+        if !context_set.contains(&i) {
+            continue;
+        }
+
+        // Insert separator if there’s a gap
+        if let Some(last) = prev {
+            if i > last + 1 {
+                println!("--");
+            }
+        }
+
+        // Choose prefix: '>' for match, '|' for context
+        let prefix = if match_set.contains(&i) { '>' } else { '|' };
+
+        // Optional line numbers
+        if args.show_line_numbers {
+            // +1 because `enumerate` is zero-based
+            println!("{} {:>4}: {}", prefix, i + 1, line);
+        } else {
+            println!("{} {}", prefix, line);
+        }
+
+        prev = Some(i);
     }
 }

@@ -39,9 +39,7 @@ pub fn print_matches_with_context(
         // Choose prefix: '>' for match, '|' for context
         let prefix = if match_set.contains(&i) { '>' } else { '|' };
 
-        // Optional line numbers
         if args.show_line_numbers {
-            // +1 because `enumerate` is zero-based
             println!("{} {:>4}: {}", prefix, i + 1, line);
         } else {
             println!("{} {}", prefix, line);

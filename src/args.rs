@@ -37,6 +37,14 @@ pub struct Args {
     #[arg(short = 'C', long, default_value_t = 0, value_name = "NUM")]
     pub context: usize,
 
+    /// Number of lines **after** each match to include
+    #[arg(short = 'A', long, default_value_t = 0, value_name = "NUM")]
+    pub context_after: usize,
+
+    /// Number of lines **before** each match to include
+    #[arg(short = 'B', long, default_value_t = 0, value_name = "NUM")]
+    pub context_before: usize,
+
     /// Treat query as a regular expression
     #[arg(short = 'E', long, action = ArgAction::SetTrue)]
     pub regex: bool,

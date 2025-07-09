@@ -30,7 +30,7 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
         if args.invert { !hit } else { hit }
     };
     
-    if args.context != 0 {
+    if (args.context, args.context_after, args.context_before) != (0, 0, 0) {
         let lines: Vec<&str> = contents.lines().collect();
 
         let match_idxs: Vec<usize> = lines
@@ -39,10 +39,13 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
             .filter_map(|(i, &line)| if matcher(line) { Some(i) } else { None })
             .collect();
         
+        let after = if args.context > 0 { args.context } else { args.context_after };
+        let before = if args.context > 0 { args.context } else { args.context_before };
+        
         let mut context_set = HashSet::new();
         for &i in &match_idxs {
-            let start = i.saturating_sub(args.context);
-            let end = min(i + args.context, lines.len().saturating_sub(1));
+            let start = i.saturating_sub(before);
+            let end = min(i + after, lines.len().saturating_sub(1));
             for j in start..=end {
                 context_set.insert(j);
             }

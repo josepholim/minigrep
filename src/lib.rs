@@ -1,6 +1,8 @@
 use std::fs;
 use std::io;
 use std::error::Error;
+use std::cmp::min;
+use std::collections::HashSet;
 
 use regex::Regex;
 
@@ -8,7 +10,7 @@ pub mod args;
 use args::Args;
 
 pub mod output;
-use output::print_matches;
+use output::{print_matches, print_matches_with_context};
 
 pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
     let contents = if args.path == "-" {
@@ -16,7 +18,7 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
     } else {
         fs::read_to_string(&args.path)?
     };
-
+    
     let matcher = |line: &str| {
         let hit = if args.regex {
             Regex::new(&args.query).unwrap().is_match(line)
@@ -27,6 +29,32 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
         };
         if args.invert { !hit } else { hit }
     };
+    
+    if (args.context, args.context_after, args.context_before) != (0, 0, 0) {
+        let lines: Vec<&str> = contents.lines().collect();
+
+        let match_idxs: Vec<usize> = lines
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &line)| if matcher(line) { Some(i) } else { None })
+            .collect();
+        
+        let after = if args.context > 0 { args.context } else { args.context_after };
+        let before = if args.context > 0 { args.context } else { args.context_before };
+        
+        let mut context_set = HashSet::new();
+        for &i in &match_idxs {
+            let start = i.saturating_sub(before);
+            let end = min(i + after, lines.len().saturating_sub(1));
+            for j in start..=end {
+                context_set.insert(j);
+            }
+        }
+
+        print_matches_with_context(&lines, &match_idxs, &context_set, args);
+
+        return Ok(());
+    }
 
     let matches: Vec<(usize, &str)> = contents
         .lines()

@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{self, Read};
+use std::io;
 use std::path::Path;
 use std::error::Error;
 use std::cmp::min;
@@ -16,8 +16,10 @@ pub mod traversal;
 
 pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
     let base = Path::new(&args.path);
+    let ignore_path = Path::new(&args.ignore_file);
 
-    let files = traversal::collect_files(base, args.recursive)?;
+
+    let files = traversal::collect_files(base, args.recursive, ignore_path)?;
 
     for path in files {
         println!("{}:", path.display());

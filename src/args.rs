@@ -48,4 +48,8 @@ pub struct Args {
     /// Treat query as a regular expression
     #[arg(short = 'E', long, action = ArgAction::SetTrue)]
     pub regex: bool,
+
+    /// Recurse into directories
+    #[arg(short = 'R', long, action = ArgAction::SetTrue)]
+    pub recursive: bool,
 }

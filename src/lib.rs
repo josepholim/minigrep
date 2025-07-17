@@ -1,5 +1,6 @@
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::error::Error;
 use std::cmp::min;
 use std::collections::HashSet;
@@ -10,13 +11,29 @@ pub mod args;
 use args::Args;
 
 pub mod output;
-use output::{print_matches, print_matches_with_context};
+
+pub mod traversal;
 
 pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
-    let contents = if args.path == "-" {
+    let base = Path::new(&args.path);
+    let ignore_path = Path::new(&args.ignore_file);
+
+
+    let files = traversal::collect_files(base, args.recursive, ignore_path)?;
+
+    for path in files {
+        println!("{}:", path.display());
+        run_single(&path, args)?;
+    }
+
+    Ok(())
+}
+
+pub fn run_single(path: &Path, args: &Args) -> Result<(), Box<dyn Error>> {
+    let contents = if path.to_string_lossy() == "-" {
         io::read_to_string(io::stdin())?
     } else {
-        fs::read_to_string(&args.path)?
+        fs::read_to_string(path)?
     };
     
     let matcher = |line: &str| {
@@ -51,7 +68,7 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
             }
         }
 
-        print_matches_with_context(&lines, &match_idxs, &context_set, args);
+        output::print_matches_with_context(&lines, &match_idxs, &context_set, args);
 
         return Ok(());
     }
@@ -62,7 +79,7 @@ pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
         .filter(|(_, line)| matcher(line))
         .collect();
 
-    print_matches(&matches, args);
+    output::print_matches(&matches, args);
 
     Ok(())
 }

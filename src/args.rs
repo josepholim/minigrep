@@ -48,4 +48,12 @@ pub struct Args {
     /// Treat query as a regular expression
     #[arg(short = 'E', long, action = ArgAction::SetTrue)]
     pub regex: bool,
+
+    /// Recurse into directories
+    #[arg(short = 'R', long, action = ArgAction::SetTrue)]
+    pub recursive: bool,
+
+    /// Path to an ignore file to skip files
+    #[arg(long, default_value = ".gitignore", value_name = "FILE")]
+    pub ignore_file: String,
 }

@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.2", features = ["derive"] }
 regex = "1"
+ignore = "0.4"
+

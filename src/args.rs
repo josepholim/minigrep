@@ -56,4 +56,8 @@ pub struct Args {
     /// Path to an ignore file to skip files
     #[arg(long, default_value = ".gitignore", value_name = "FILE")]
     pub ignore_file: String,
+
+    /// Colorize matching text
+    #[arg(long, action = ArgAction::SetTrue)]
+    pub color: bool,
 }

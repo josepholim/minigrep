@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use crate::args::Args;
+use colored::Colorize;
 
 pub fn print_matches(matches: &[(usize, &str)], args: &Args) {
     if args.count {
@@ -8,10 +9,12 @@ pub fn print_matches(matches: &[(usize, &str)], args: &Args) {
     }
 
     for &(idx, line) in matches {
+        let line_output = highlight(line, args);
+        
         if args.show_line_numbers {
             print!("{:>6}  ", idx + 1);
         }
-        println!("{}", line);
+        println!("{}", line_output);
     }
 }
 
@@ -39,12 +42,25 @@ pub fn print_matches_with_context(
         // Choose prefix: '>' for match, '|' for context
         let prefix = if match_set.contains(&i) { '>' } else { '|' };
 
+        let line_output = highlight(line, args);
+
         if args.show_line_numbers {
-            println!("{} {:>4}: {}", prefix, i + 1, line);
+            println!("{} {:>4}: {}", prefix, i + 1, line_output);
         } else {
-            println!("{} {}", prefix, line);
+            println!("{} {}", prefix, line_output);
         }
 
         prev = Some(i);
+    }
+}
+
+fn highlight(line: &str, args: &Args) -> String {
+    if args.color {
+        line.replace(
+            &args.query,
+            &args.query.red().bold().to_string(),
+        )
+    } else {
+        line.to_string()
     }
 }

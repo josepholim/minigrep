@@ -14,6 +14,9 @@ pub mod output;
 
 pub mod traversal;
 
+pub mod matcher;
+use matcher::Matcher;
+
 pub fn run(args: &Args) -> Result<(), Box<dyn Error>> {
     let base = Path::new(&args.path);
     let ignore_path = Path::new(&args.ignore_file);
@@ -35,17 +38,8 @@ pub fn run_single(path: &Path, args: &Args) -> Result<(), Box<dyn Error>> {
     } else {
         fs::read_to_string(path)?
     };
-    
-    let matcher = |line: &str| {
-        let hit = if args.regex {
-            Regex::new(&args.query).unwrap().is_match(line)
-        } else if args.ignore_case {
-            line.to_lowercase().contains(&args.query.to_lowercase())
-        } else {
-            line.contains(&args.query)
-        };
-        if args.invert { !hit } else { hit }
-    };
+
+    let matcher = Matcher::new(args);
     
     if (args.context, args.context_after, args.context_before) != (0, 0, 0) {
         let lines: Vec<&str> = contents.lines().collect();
@@ -53,7 +47,7 @@ pub fn run_single(path: &Path, args: &Args) -> Result<(), Box<dyn Error>> {
         let match_idxs: Vec<usize> = lines
             .iter()
             .enumerate()
-            .filter_map(|(i, &line)| if matcher(line) { Some(i) } else { None })
+            .filter_map(|(i, &line)| if matcher.is_match(line) { Some(i) } else { None })
             .collect();
         
         let after = if args.context > 0 { args.context } else { args.context_after };
@@ -76,7 +70,7 @@ pub fn run_single(path: &Path, args: &Args) -> Result<(), Box<dyn Error>> {
     let matches: Vec<(usize, &str)> = contents
         .lines()
         .enumerate()
-        .filter(|(_, line)| matcher(line))
+        .filter(|(_, line)| matcher.is_match(line))
         .collect();
 
     output::print_matches(&matches, args);

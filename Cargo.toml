@@ -8,3 +8,4 @@ clap = { version = "4.2", features = ["derive"] }
 regex = "1"
 ignore = "0.4"
 colored = "2"
+fuzzy-matcher = "0.3"

@@ -60,4 +60,12 @@ pub struct Args {
     /// Colorize matching text
     #[arg(long, action = ArgAction::SetTrue)]
     pub color: bool,
+
+    /// Use fuzzy matching instead of exact substring/regex
+    #[arg(long, action = ArgAction::SetTrue)]
+    pub fuzzy: bool,
+
+    /// Minimum fuzzy score to accept (higher implies stricter)
+    #[arg(long, default_value_t = 1, value_name = "SCORE")]
+    pub fuzzy_threshold: i64,
 }

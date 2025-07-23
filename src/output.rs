@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use crate::args::Args;
 use colored::Colorize;
+use regex::RegexBuilder;
 
 pub fn print_matches(matches: &[(usize, &str)], args: &Args) {
     if args.count {
@@ -54,13 +55,67 @@ pub fn print_matches_with_context(
     }
 }
 
-fn highlight(line: &str, args: &Args) -> String {
-    if args.color {
-        line.replace(
-            &args.query,
-            &args.query.red().bold().to_string(),
-        )
+pub fn highlight(line: &str, args: &Args) -> String {
+    if !args.color {
+        return line.to_string();
+    }
+
+    let mut spans: Vec<(usize, usize)> = Vec::new();
+    let hay = if args.ignore_case {
+        line.to_lowercase()
     } else {
         line.to_string()
+    };
+
+    if args.regex {
+        for q in &args.query {
+            if let Ok(re) = RegexBuilder::new(q)
+                .case_insensitive(args.ignore_case)
+                .build()
+            {
+                for mat in re.find_iter(line) {
+                    spans.push((mat.start(), mat.end()));
+                }
+            }
+        }
+    } else {
+        for q in &args.query {
+            let q_cmp = if args.ignore_case {
+                q.to_lowercase()
+            } else {
+                q.clone()
+            };
+            let mut search_start = 0;
+            while let Some(pos) = hay[search_start..].find(&q_cmp) {
+                let s = search_start + pos;
+                spans.push((s, s + q_cmp.len()));
+                search_start = s + q_cmp.len();
+            }
+        }
     }
+
+    // Sort spans and merge overlapping/adjacent ones
+    spans.sort_unstable_by_key(|&(s, _)| s);
+    let mut merged: Vec<(usize, usize)> = Vec::new();
+    for (s, e) in spans {
+        if let Some(last) = merged.last_mut() {
+            if s <= last.1 {
+                last.1 = last.1.max(e);
+                continue;
+            }
+        }
+        merged.push((s, e));
+    }
+
+    // Rebuild the line with ANSI coloring for each span
+    let mut result = String::new();
+    let mut last_end = 0;
+    for (s, e) in merged {
+        result.push_str(&line[last_end..s]);
+        result.push_str(&line[s..e].red().bold().to_string());
+        last_end = e;
+    }
+    result.push_str(&line[last_end..]);
+
+    result
 }

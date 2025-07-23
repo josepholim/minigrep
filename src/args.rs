@@ -10,8 +10,8 @@ use clap::{Parser, ArgAction};
 )]
 pub struct Args {
     /// The pattern to look for
-    #[arg(short, long, value_name = "PATTERN")]
-    pub query: String,
+    #[arg(short = 'e', long, value_name = "PATTERN", num_args = 1..)]
+    pub query: Vec<String>,
 
     /// File or directory to search (use "-" or omit for stdin)
     #[arg(short, long, default_value = "-", value_name = "PATH")]

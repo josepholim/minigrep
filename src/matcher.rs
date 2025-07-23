@@ -4,10 +4,10 @@ use fuzzy_matcher::FuzzyMatcher;
 use crate::args::Args;
 
 pub enum MatcherKind {
-    Exact(String),
-    CaseInsensitive(String),
-    Regex(Regex),
-    Fuzzy(String, SkimMatcherV2, i64),
+    Exact(Vec<String>),
+    CaseInsensitive(Vec<String>),
+    Regex(Vec<Regex>),
+    Fuzzy(Vec<String>, SkimMatcherV2, i64),
 }
 
 pub struct Matcher {
@@ -25,12 +25,19 @@ impl Matcher {
                 args.fuzzy_threshold,
             )
         } else if args.regex {
-            MatcherKind::Regex(Regex::new(&args.query).unwrap())
+            let mut regexes = Vec::with_capacity(args.query.len());
+            for q in &args.query {
+                let re = Regex::new(q).unwrap();
+                regexes.push(re);
+            }
+            MatcherKind::Regex(regexes)
         } else if args.ignore_case {
-            MatcherKind::CaseInsensitive(args.query.to_lowercase())
+            let ci_query = args.query.iter().map(|q| q.to_lowercase()).collect();
+            MatcherKind::CaseInsensitive(ci_query)
         } else {
             MatcherKind::Exact(args.query.clone())
         };
+
         Matcher { kind, invert: args.invert }
     }
 
@@ -38,14 +45,22 @@ impl Matcher {
     /// applying inversion if requested.
     pub fn is_match(&self, line: &str) -> bool {
         let hit = match &self.kind {
-            MatcherKind::Exact(q) => line.contains(q),
-            MatcherKind::CaseInsensitive(q) => line.to_lowercase().contains(q),
-            MatcherKind::Regex(re) => re.is_match(line),
-            MatcherKind::Fuzzy(query, matcher, threshold) => {
-                matcher
-                    .fuzzy_match(line, query)
-                    .filter(|&score| score >= *threshold)
-                    .is_some()
+            MatcherKind::Exact(queries) => {
+                queries.iter().any(|q| line.contains(q))
+            }
+            MatcherKind::CaseInsensitive(queries) => {
+                queries.iter().any(|q| line.to_lowercase().contains(q))
+            }
+            MatcherKind::Regex(regexes) => {
+                regexes.iter().any(|re| re.is_match(line))
+            }
+            MatcherKind::Fuzzy(queries, matcher, threshold) => {
+                queries.iter().any(|query| {
+                    matcher
+                        .fuzzy_match(line, query)
+                        .filter(|&score| score >= *threshold)
+                        .is_some()
+                })
             }
         };
         if self.invert { !hit } else { hit }

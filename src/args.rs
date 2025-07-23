@@ -13,8 +13,8 @@ pub struct Args {
     #[arg(short = 'e', long, value_name = "PATTERN", num_args = 1..)]
     pub query: Vec<String>,
 
-    /// File or directory to search (use "-" or omit for stdin)
-    #[arg(short, long, default_value = "-", value_name = "PATH")]
+    /// File or directory to search
+    #[arg(short, long, required = true, value_name = "PATH")]
     pub path: String,
 
     /// Case-insensitive matching

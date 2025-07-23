@@ -38,16 +38,15 @@ cargo build --release
 ## Usage
 
 ```text
-Usage: minigrep [OPTIONS] <PATHS>...
+Usage: minigrep [OPTIONS] --path <PATH>
 
 Search for patterns in files or directories.
 
 Arguments:
-  <PATHS>...        File or directory paths to search
+      --path <PATH>             File or directory path to search
 
 Options:
   -e, --query <PATTERN>...      Pattern(s) to search for (can use multiple)
-      --path <PATH>             Search in the <PATH> file or directory
   -i, --ignore-case             Case-insensitive search
   -E, --regex                   Treat patterns as regular expressions
       --fuzzy                   Enable fuzzy matching
